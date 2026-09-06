@@ -209,12 +209,12 @@ export default function PatternFinder() {
             <div className="col-span-3 text-sm font-semibold text-purple-400">Pattern Matches</div>
           </div>
 
-          {/* Desktop: 3-Column Layout | Mobile: Stacked Sections */}
-          <div className="flex-1 min-h-0 flex flex-col md:grid md:grid-cols-12 gap-2 md:gap-3 p-2 md:p-3 overflow-y-auto md:overflow-hidden">
+          {/* Desktop: 3-Column Layout | Mobile: Stacked Sections with proper spacing */}
+          <div className="flex-1 min-h-0 flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-3 p-2 md:p-3 overflow-y-auto md:overflow-hidden">
             
             {/* Section 1: Fetch Form */}
-            <div className="md:col-span-2 flex flex-col gap-2 md:overflow-y-auto md:pr-2">
-              <div className="md:hidden text-sm font-semibold text-yellow-400 mb-1">Fetch Data</div>
+            <div className="flex-shrink-0 md:col-span-2 md:flex md:flex-col gap-2 md:overflow-y-auto md:pr-2 bg-gray-800/30 md:bg-transparent p-3 md:p-0 rounded-lg md:rounded-none">
+              <div className="md:hidden text-sm font-semibold text-yellow-400 mb-2">Fetch Data</div>
               
               <div>
                 <label className="text-xs text-gray-400 block mb-1">Ticker</label>
@@ -281,8 +281,8 @@ export default function PatternFinder() {
             </div>
 
             {/* Section 2: Candles */}
-            <div className="md:col-span-7 flex flex-col min-h-0">
-              <div className="md:hidden text-sm font-semibold text-green-400 mb-1">Candles Preview</div>
+            <div className="flex-shrink-0 md:col-span-7 md:flex md:flex-col min-h-0 bg-gray-800/30 md:bg-transparent p-3 md:p-0 rounded-lg md:rounded-none">
+              <div className="md:hidden text-sm font-semibold text-green-400 mb-2">Candles Preview</div>
               
               {candles.length === 0 ? (
                 <div className="flex-1 flex items-center justify-center text-gray-500 py-8 md:py-0">
@@ -311,8 +311,8 @@ export default function PatternFinder() {
             </div>
 
             {/* Section 3: Matches */}
-            <div className="md:col-span-3 flex flex-col min-h-0">
-              <div className="md:hidden text-sm font-semibold text-purple-400 mb-1">Pattern Matches</div>
+            <div className="flex-shrink-0 md:col-span-3 md:flex md:flex-col min-h-0 bg-gray-800/30 md:bg-transparent p-3 md:p-0 rounded-lg md:rounded-none">
+              <div className="md:hidden text-sm font-semibold text-purple-400 mb-2">Pattern Matches</div>
               
               {matches.length === 0 ? (
                 <div className="h-full flex items-center justify-center text-gray-500 py-8 md:py-0">
