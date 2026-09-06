@@ -30,9 +30,8 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 
-# Copy public folder if it exists (create empty one if not)
-RUN mkdir -p ./public
-COPY --from=builder /app/public ./public 2>/dev/null || true
+# Copy public folder (with .gitkeep file)
+COPY --from=builder /app/public ./public
 
 # Copy Python API scripts
 COPY api ./api
