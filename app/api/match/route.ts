@@ -1,0 +1,80 @@
+import { NextRequest, NextResponse } from "next/server";
+import { spawn } from "child_process";
+import path from "path";
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { candles, topK = 10 } = body;
+
+    if (!Array.isArray(candles) || candles.length === 0) {
+      return NextResponse.json({ error: "Invalid candles array" }, { status: 400 });
+    }
+
+    // Validate candles format
+    for (const c of candles) {
+      if (
+        typeof c.open !== "number" ||
+        typeof c.high !== "number" ||
+        typeof c.low !== "number" ||
+        typeof c.close !== "number"
+      ) {
+        return NextResponse.json(
+          { error: "Each candle must have open, high, low, close as numbers" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Call Python script
+    const scriptPath = path.join(process.cwd(), "api", "find_patterns.py");
+    const python = spawn("python", [
+      scriptPath,
+      JSON.stringify(candles),
+      topK.toString(),
+    ]);
+
+    let stdout = "";
+    let stderr = "";
+
+    python.stdout.on("data", (data) => {
+      stdout += data.toString();
+    });
+
+    python.stderr.on("data", (data) => {
+      stderr += data.toString();
+    });
+
+    return new Promise<NextResponse>((resolve) => {
+      python.on("close", (code) => {
+        if (code !== 0) {
+          console.error("Python error:", stderr);
+          resolve(
+            NextResponse.json(
+              { error: "Pattern matching failed", details: stderr },
+              { status: 500 }
+            )
+          );
+          return;
+        }
+
+        try {
+          const results = JSON.parse(stdout);
+          resolve(NextResponse.json({ matches: results }));
+        } catch (e) {
+          resolve(
+            NextResponse.json(
+              { error: "Invalid response from matcher" },
+              { status: 500 }
+            )
+          );
+        }
+      });
+    });
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: "Server error", message: error.message },
+      { status: 500 }
+    );
+  }
+}
