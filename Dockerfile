@@ -28,8 +28,11 @@ RUN apk add --no-cache python3 py3-pip tzdata
 # Copy built app from builder
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
 COPY --from=builder /app/node_modules ./node_modules
+
+# Copy public folder if it exists (create empty one if not)
+RUN mkdir -p ./public
+COPY --from=builder /app/public ./public 2>/dev/null || true
 
 # Copy Python API scripts
 COPY api ./api
