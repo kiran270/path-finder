@@ -5,25 +5,10 @@ import path from "path";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { candles, topK = 10, ticker, interval } = body;
+    const { day, ticker, interval } = body;
 
-    if (!Array.isArray(candles) || candles.length === 0) {
-      return NextResponse.json({ error: "Invalid candles array" }, { status: 400 });
-    }
-
-    // Validate candles format
-    for (const c of candles) {
-      if (
-        typeof c.open !== "number" ||
-        typeof c.high !== "number" ||
-        typeof c.low !== "number" ||
-        typeof c.close !== "number"
-      ) {
-        return NextResponse.json(
-          { error: "Each candle must have open, high, low, close as numbers" },
-          { status: 400 }
-        );
-      }
+    if (!day) {
+      return NextResponse.json({ error: "Day parameter required" }, { status: 400 });
     }
 
     // Map ticker to database symbol
@@ -35,14 +20,11 @@ export async function POST(req: NextRequest) {
     const symbol = ticker ? tickerToSymbol[ticker] || ticker : null;
 
     // Call Python script with symbol and interval parameters
-    const scriptPath = path.join(process.cwd(), "api", "find_patterns.py");
-    const args = [
-      scriptPath, 
-      JSON.stringify(candles),
-      symbol || "",
-      interval || "",
-      topK.toString()
-    ];
+    const scriptPath = path.join(process.cwd(), "api", "get_day_candles.py");
+    const args = [scriptPath, day];
+    
+    if (symbol) args.push(symbol);
+    if (interval) args.push(interval);
     
     const python = spawn("python", args);
 
@@ -63,7 +45,7 @@ export async function POST(req: NextRequest) {
           console.error("Python error:", stderr);
           resolve(
             NextResponse.json(
-              { error: "Pattern matching failed", details: stderr },
+              { error: "Failed to fetch day candles", details: stderr },
               { status: 500 }
             )
           );
@@ -72,11 +54,15 @@ export async function POST(req: NextRequest) {
 
         try {
           const results = JSON.parse(stdout);
-          resolve(NextResponse.json({ matches: results }));
+          if (results.error) {
+            resolve(NextResponse.json({ error: results.error }, { status: 400 }));
+            return;
+          }
+          resolve(NextResponse.json({ candles: results.candles }));
         } catch (e) {
           resolve(
             NextResponse.json(
-              { error: "Invalid response from matcher" },
+              { error: "Invalid response from script" },
               { status: 500 }
             )
           );
@@ -84,6 +70,7 @@ export async function POST(req: NextRequest) {
       });
     });
   } catch (error: any) {
+    console.error("Day candles fetch error:", error);
     return NextResponse.json(
       { error: "Server error", message: error.message },
       { status: 500 }

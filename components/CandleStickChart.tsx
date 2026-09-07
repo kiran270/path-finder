@@ -48,12 +48,12 @@ export default function CandleStickChart({ candles }: CandleStickChartProps) {
     return maxPrice - (priceRange * i) / 4;
   });
 
-  // TradingView colors
-  const BULLISH_COLOR = '#26a69a'; // Teal/cyan
-  const BEARISH_COLOR = '#ef5350'; // Red
+  // Fresh green/teal colors
+  const BULLISH_COLOR = '#10b981'; // Emerald green
+  const BEARISH_COLOR = '#f43f5e'; // Rose red
 
   return (
-    <div className="w-full h-full bg-gray-800/30 rounded-lg p-4 border border-gray-700/30 flex flex-col">
+    <div className="w-full h-full bg-white rounded-xl p-4 border-2 border-emerald-200 shadow-md flex flex-col">
       <svg
         viewBox={`0 0 ${width} ${height}`}
         className="w-full h-full"
@@ -69,9 +69,9 @@ export default function CandleStickChart({ candles }: CandleStickChartProps) {
               y1={paddingTop}
               x2={x}
               y2={height - paddingBottom}
-              stroke="rgb(45, 55, 72)"
+              stroke="rgb(167, 243, 208)"
               strokeWidth="0.5"
-              opacity="0.3"
+              opacity="0.5"
             />
           );
         })}
@@ -86,15 +86,17 @@ export default function CandleStickChart({ candles }: CandleStickChartProps) {
                 y1={y}
                 x2={width - paddingRight}
                 y2={y}
-                stroke="rgb(55, 65, 81)"
+                stroke="rgb(167, 243, 208)"
                 strokeWidth="1"
                 strokeDasharray="4,4"
+                opacity="0.6"
               />
               <text
                 x={width - paddingRight + 5}
                 y={y + 4}
                 fontSize="11"
-                fill="rgb(156, 163, 175)"
+                fill="rgb(4, 120, 87)"
+                fontWeight="600"
                 className="select-none"
               >
                 {price.toFixed(0)}
@@ -148,7 +150,8 @@ export default function CandleStickChart({ candles }: CandleStickChartProps) {
                   x={x}
                   y={height - paddingBottom + 15}
                   fontSize="9"
-                  fill="rgb(156, 163, 175)"
+                  fill="rgb(4, 120, 87)"
+                  fontWeight="600"
                   textAnchor="middle"
                   className="select-none"
                 >
@@ -165,8 +168,8 @@ export default function CandleStickChart({ candles }: CandleStickChartProps) {
           y1={height - paddingBottom}
           x2={width - paddingRight}
           y2={height - paddingBottom}
-          stroke="rgb(75, 85, 99)"
-          strokeWidth="1"
+          stroke="rgb(16, 185, 129)"
+          strokeWidth="2"
         />
 
         {/* Y-axis line */}
@@ -175,24 +178,24 @@ export default function CandleStickChart({ candles }: CandleStickChartProps) {
           y1={paddingTop}
           x2={paddingLeft}
           y2={height - paddingBottom}
-          stroke="rgb(75, 85, 99)"
-          strokeWidth="1"
+          stroke="rgb(16, 185, 129)"
+          strokeWidth="2"
         />
       </svg>
 
       {/* Legend */}
-      <div className="flex-none mt-3 pt-3 border-t border-gray-700/30 flex items-center justify-between text-xs">
+      <div className="flex-none mt-3 pt-3 border-t-2 border-emerald-200 flex items-center justify-between text-xs">
         <div className="flex gap-3">
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: BULLISH_COLOR }} />
-            <span className="text-gray-400">Bullish</span>
+            <span className="text-gray-700 font-semibold">Bullish</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: BEARISH_COLOR }} />
-            <span className="text-gray-400">Bearish</span>
+            <span className="text-gray-700 font-semibold">Bearish</span>
           </div>
         </div>
-        <div className="text-gray-500">
+        <div className="text-gray-600 font-semibold">
           {Math.min(numCandles, GRID_COLUMNS)}/{numCandles} candles | Range: {minPrice.toFixed(0)} - {maxPrice.toFixed(0)}
         </div>
       </div>
