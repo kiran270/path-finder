@@ -306,7 +306,7 @@ export default function PatternFinder() {
                 <div className="h-full flex flex-col gap-2 overflow-y-auto">
                   <div className="grid grid-cols-2 md:grid-cols-1 gap-2">
                     {matches.slice(0, 10).map((m, i) => (
-                      <div key={i} className="flex flex-col gap-1">
+                      <div key={i} className={`flex flex-col gap-1 ${expandedMatch === i ? 'col-span-2 md:col-span-1' : ''}`}>
                         <div
                           onClick={() => handleMatchClick(i, m)}
                           className={`bg-gradient-to-br from-white to-emerald-50/30 border-2 rounded-xl px-3 py-2 transition-all flex flex-col gap-1 cursor-pointer ${
