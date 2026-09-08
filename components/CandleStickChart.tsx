@@ -12,9 +12,11 @@ interface CandleStickChartProps {
 export default function CandleStickChart({ candles }: CandleStickChartProps) {
   if (candles.length === 0) return null;
 
-  // Fixed 30-column grid
-  const GRID_COLUMNS = 30;
+  // Dynamic sizing - show all candles up to max 75
   const numCandles = candles.length;
+  const MAX_DISPLAY_CANDLES = 75;
+  const displayCandles = Math.min(numCandles, MAX_DISPLAY_CANDLES);
+  
   const width = 900;
   const height = 400;
   const paddingLeft = 10;
@@ -24,12 +26,12 @@ export default function CandleStickChart({ candles }: CandleStickChartProps) {
   const chartWidth = width - paddingLeft - paddingRight;
   const chartHeight = height - paddingTop - paddingBottom;
 
-  // Fixed column width based on 30 columns
-  const columnWidth = chartWidth / GRID_COLUMNS;
+  // Dynamic column width based on number of candles to display
+  const columnWidth = chartWidth / displayCandles;
   
-  // Candle sizing - much thinner to fit 30 columns
-  const bodyWidth = columnWidth * 0.6; // 60% of column width
-  const wickWidth = Math.max(columnWidth * 0.1, 1); // 10% of column, min 1px
+  // Candle sizing - adaptive
+  const bodyWidth = Math.max(columnWidth * 0.65, 1.5); // 65% of column, min 1.5px
+  const wickWidth = Math.max(columnWidth * 0.15, 0.8); // 15% of column, min 0.8px
 
   // Find min/max for scaling
   const allPrices = candles.flatMap(c => [c.high, c.low]);
@@ -59,9 +61,10 @@ export default function CandleStickChart({ candles }: CandleStickChartProps) {
         className="w-full h-full"
         preserveAspectRatio="xMidYMid meet"
       >
-        {/* Vertical grid lines for 30 columns */}
-        {Array.from({ length: GRID_COLUMNS + 1 }, (_, i) => {
-          const x = paddingLeft + i * columnWidth;
+        {/* Vertical grid lines - every 5th candle position */}
+        {Array.from({ length: Math.ceil(displayCandles / 5) + 1 }, (_, i) => {
+          const candleIndex = i * 5;
+          const x = paddingLeft + candleIndex * columnWidth;
           return (
             <line
               key={`vgrid-${i}`}
@@ -105,9 +108,9 @@ export default function CandleStickChart({ candles }: CandleStickChartProps) {
           );
         })}
 
-        {/* Candles - placed in fixed grid columns */}
-        {candles.slice(0, GRID_COLUMNS).map((candle, i) => {
-          // Place each candle in its corresponding grid column
+        {/* Candles - show all candles up to MAX_DISPLAY_CANDLES */}
+        {candles.slice(0, displayCandles).map((candle, i) => {
+          // Place each candle in its column
           const x = paddingLeft + i * columnWidth + columnWidth / 2;
           const isBullish = candle.close >= candle.open;
 
@@ -144,20 +147,23 @@ export default function CandleStickChart({ candles }: CandleStickChartProps) {
                 strokeWidth="0.5"
               />
 
-              {/* Candle number on X-axis (show every 5th) */}
-              {(i + 1) % 5 === 0 && (
-                <text
-                  x={x}
-                  y={height - paddingBottom + 15}
-                  fontSize="9"
-                  fill="rgb(4, 120, 87)"
-                  fontWeight="600"
-                  textAnchor="middle"
-                  className="select-none"
-                >
-                  {i + 1}
-                </text>
-              )}
+              {/* Candle number on X-axis - show every 10th or adaptive */}
+              {(() => {
+                const labelStep = displayCandles <= 30 ? 5 : 10;
+                return (i + 1) % labelStep === 0 ? (
+                  <text
+                    x={x}
+                    y={height - paddingBottom + 15}
+                    fontSize="9"
+                    fill="rgb(4, 120, 87)"
+                    fontWeight="600"
+                    textAnchor="middle"
+                    className="select-none"
+                  >
+                    {i + 1}
+                  </text>
+                ) : null;
+              })()}
             </g>
           );
         })}
@@ -196,7 +202,7 @@ export default function CandleStickChart({ candles }: CandleStickChartProps) {
           </div>
         </div>
         <div className="text-gray-600 font-semibold">
-          {Math.min(numCandles, GRID_COLUMNS)}/{numCandles} candles | Range: {minPrice.toFixed(0)} - {maxPrice.toFixed(0)}
+          {displayCandles} of {numCandles} candles | Range: {minPrice.toFixed(0)} - {maxPrice.toFixed(0)}
         </div>
       </div>
     </div>

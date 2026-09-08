@@ -192,8 +192,8 @@ export default function PatternFinder() {
           {/* Desktop: Header Row */}
           <div className="hidden md:grid flex-none grid-cols-12 gap-3 p-3 border-b border-emerald-100/70 bg-gradient-to-r from-emerald-50/50 to-teal-50/50">
             <div className="col-span-2 text-sm font-bold text-emerald-700">Fetch Data</div>
-            <div className="col-span-7 text-sm font-bold text-teal-700">Candles Preview</div>
-            <div className="col-span-3 text-sm font-bold text-cyan-700">Pattern Matches</div>
+            <div className="col-span-5 text-sm font-bold text-teal-700">Candles Preview</div>
+            <div className="col-span-5 text-sm font-bold text-cyan-700">Pattern Matches</div>
           </div>
 
           {/* Content Grid */}
@@ -259,8 +259,8 @@ export default function PatternFinder() {
               </button>
             </div>
 
-            {/* Candles Preview */}
-            <div className="flex-shrink-0 md:col-span-7 md:flex md:flex-col min-h-0 bg-teal-50/50 md:bg-transparent p-3 md:p-0 rounded-xl md:rounded-none border md:border-0 border-teal-200">
+            {/* Candles Preview - Reduced to col-span-5 */}
+            <div className="flex-shrink-0 md:col-span-5 md:flex md:flex-col min-h-0 bg-teal-50/50 md:bg-transparent p-3 md:p-0 rounded-xl md:rounded-none border md:border-0 border-teal-200">
               <div className="md:hidden text-sm font-bold text-teal-700 mb-2">Candles Preview</div>
               
               {candles.length === 0 ? (
@@ -274,7 +274,7 @@ export default function PatternFinder() {
                 </div>
               ) : (
                 <>
-                  <div className="flex-1 min-h-0 min-h-[300px] md:min-h-0">
+                  <div className="flex-1 min-h-0 min-h-[200px] md:min-h-0">
                     <CandleStickChart candles={candles} />
                   </div>
 
@@ -289,8 +289,8 @@ export default function PatternFinder() {
               )}
             </div>
 
-            {/* Pattern Matches */}
-            <div className="flex-shrink-0 md:col-span-3 md:flex md:flex-col min-h-0 bg-cyan-50/50 md:bg-transparent p-3 md:p-0 rounded-xl md:rounded-none border md:border-0 border-cyan-200">
+            {/* Pattern Matches - Increased to col-span-5 */}
+            <div className="flex-shrink-0 md:col-span-5 md:flex md:flex-col min-h-0 bg-cyan-50/50 md:bg-transparent p-3 md:p-0 rounded-xl md:rounded-none border md:border-0 border-cyan-200">
               <div className="md:hidden text-sm font-bold text-cyan-700 mb-2">Pattern Matches</div>
               
               {matches.length === 0 ? (
@@ -347,44 +347,46 @@ export default function PatternFinder() {
 
                         {/* Expanded View */}
                         {expandedMatch === i && expandedDayCandles.length > 0 && (
-                          <div className="bg-white border-2 border-emerald-300 rounded-xl p-3 shadow-lg">
-                            <div className="text-xs font-bold text-emerald-700 mb-2">
+                          <div className="bg-white border-2 border-emerald-300 rounded-xl p-4 shadow-lg space-y-3">
+                            <div className="text-sm font-bold text-emerald-700 mb-2">
                               Full Day Chart - {m.day}
                             </div>
-                            <div className="h-48">
+                            {/* Increased height from h-48 to h-96 for better candle visibility */}
+                            <div className="h-96">
                               <CandleStickChart candles={expandedDayCandles} />
                             </div>
-                            <div className="mt-2 text-[10px] text-gray-600 space-y-1">
+                            {/* Compact 3-column stats */}
+                            <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-[10px] text-gray-600 bg-gray-50 p-2 rounded">
                               <div className="flex justify-between">
-                                <span>Total Candles:</span>
-                                <span className="font-semibold">{expandedDayCandles.length}</span>
+                                <span>Candles:</span>
+                                <span className="font-bold">{expandedDayCandles.length}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span>Day Open:</span>
-                                <span className="font-semibold">{expandedDayCandles[0]?.open.toFixed(2)}</span>
+                                <span>Open:</span>
+                                <span className="font-bold">{expandedDayCandles[0]?.open.toFixed(2)}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span>Day High:</span>
-                                <span className="font-semibold text-emerald-600">
+                                <span>Close:</span>
+                                <span className="font-bold">{expandedDayCandles[expandedDayCandles.length - 1]?.close.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>High:</span>
+                                <span className="font-bold text-emerald-600">
                                   {Math.max(...expandedDayCandles.map(c => c.high)).toFixed(2)}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span>Day Low:</span>
-                                <span className="font-semibold text-red-600">
+                                <span>Low:</span>
+                                <span className="font-bold text-red-600">
                                   {Math.min(...expandedDayCandles.map(c => c.low)).toFixed(2)}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span>Day Close:</span>
-                                <span className="font-semibold">{expandedDayCandles[expandedDayCandles.length - 1]?.close.toFixed(2)}</span>
+                                <span>Prev:</span>
+                                <span className="font-bold">{m.prev_close.toFixed(2)}</span>
                               </div>
-                              <div className="flex justify-between">
-                                <span>Prev Close:</span>
-                                <span className="font-semibold">{m.prev_close.toFixed(2)}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Day Change:</span>
+                              <div className="flex justify-between col-span-3 pt-1 border-t border-gray-300">
+                                <span className="font-semibold">Day Change:</span>
                                 <span className={`font-bold ${m.day_pct_change > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                                   {m.day_pct_change > 0 ? '+' : ''}{m.day_pct_change.toFixed(2)}%
                                 </span>
