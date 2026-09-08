@@ -16,15 +16,16 @@ from datetime import datetime, timedelta
 def fetch_candles(ticker: str, start_date: str, num_candles: int, interval: str = "15m"):
     """
     Fetch N candles from Yahoo Finance starting from start_date.
+    Also fetches previous day's OHLC for CPR calculation.
     
     Args:
         ticker: e.g. "AAPL", "^NSEI", "BTC-USD"
         start_date: ISO format "2024-01-15" or "2024-01-15 09:30"
-        num_candles: number of candles to fetch (going forward from start_date)
+        num_candles: number of candles to fetch
         interval: "15m", "5m", "1h"
     
     Returns:
-        List of candles [{"open": ..., "high": ..., "low": ..., "close": ...}, ...]
+        {"candles": [...], "prev_day": {"high": ..., "low": ..., "close": ...}}
     """
     try:
         # Parse start date
@@ -38,18 +39,20 @@ def fetch_candles(ticker: str, start_date: str, num_candles: int, interval: str 
             start_dt = start_dt.replace(tzinfo=None)
         
         # Calculate end date (fetch extra to ensure we get enough)
-        # 15m candles: 26 per trading day (6.5 hours), so fetch ~3x buffer
         days_needed = max(7, num_candles // 20 + 3)
         end_dt = start_dt + timedelta(days=days_needed)
+        
+        # Fetch extra days before start_date to get previous day data
+        fetch_start = start_dt - timedelta(days=5)  # Fetch 5 days before to account for weekends
         
         # Fetch data
         data = yf.download(
             ticker,
-            start=start_dt.strftime("%Y-%m-%d"),
+            start=fetch_start.strftime("%Y-%m-%d"),
             end=end_dt.strftime("%Y-%m-%d"),
             interval=interval,
             progress=False,
-            auto_adjust=False,  # Keep separate Adj Close
+            auto_adjust=False,
         )
         
         if data.empty:
@@ -63,18 +66,31 @@ def fetch_candles(ticker: str, start_date: str, num_candles: int, interval: str 
         if hasattr(data.index, 'tz') and data.index.tz is not None:
             data.index = data.index.tz_localize(None)
         
-        # Filter to candles at or after start_date
-        data = data[data.index >= start_dt]
+        # Separate data before and after start_date
+        before_start = data[data.index < start_dt]
+        after_start = data[data.index >= start_dt]
         
-        if len(data) == 0:
+        if len(after_start) == 0:
             return {"error": f"No candles found after {start_date}"}
         
-        # Take first N candles
-        data = data.head(num_candles)
+        # Get previous day data for CPR (last complete day before start_date)
+        prev_day_data = None
+        if len(before_start) > 0:
+            # Get the last day before start_date
+            prev_day_df = before_start.tail(100)  # Get last 100 candles to cover full previous day
+            if len(prev_day_df) > 0:
+                prev_day_data = {
+                    "high": float(prev_day_df["High"].max()),
+                    "low": float(prev_day_df["Low"].min()),
+                    "close": float(prev_day_df["Close"].iloc[-1]),
+                }
+        
+        # Take first N candles from start_date onwards
+        data_subset = after_start.head(num_candles)
         
         # Convert to list of dicts
         candles = []
-        for idx, row in data.iterrows():
+        for idx, row in data_subset.iterrows():
             candles.append({
                 "timestamp": idx.isoformat(),
                 "open": float(row.get("Open", row.get("open", 0))),
@@ -84,7 +100,11 @@ def fetch_candles(ticker: str, start_date: str, num_candles: int, interval: str 
                 "volume": int(row.get("Volume", row.get("volume", 0))),
             })
         
-        return {"candles": candles, "count": len(candles)}
+        return {
+            "candles": candles, 
+            "count": len(candles),
+            "prev_day": prev_day_data
+        }
     
     except Exception as e:
         return {"error": str(e)}

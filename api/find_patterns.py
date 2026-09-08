@@ -217,6 +217,29 @@ def find_similar_patterns(input_candles, symbol=None, interval=None, db_path=DB_
         
         day_close = last_candle["close"]
         day_pct_change = (day_close - prev_close) / prev_close * 100
+        day_close = last_candle["close"]
+        day_pct_change = (day_close - prev_close) / prev_close * 100
+        
+        # Get previous day's high and low for CPR calculation
+        if symbol:
+            prev_day_data = cur.execute("""
+                SELECT high, low FROM candles
+                WHERE day = ? AND symbol = ? AND high IS NOT NULL AND low IS NOT NULL
+                ORDER BY time
+            """, (prev_day, symbol)).fetchall()
+        else:
+            prev_day_data = cur.execute("""
+                SELECT high, low FROM candles
+                WHERE day = ? AND high IS NOT NULL AND low IS NOT NULL
+                ORDER BY time
+            """, (prev_day,)).fetchall()
+        
+        if prev_day_data:
+            prev_high = max(row["high"] for row in prev_day_data)
+            prev_low = min(row["low"] for row in prev_day_data)
+        else:
+            prev_high = None
+            prev_low = None
         
         matches.append({
             "day": day,
@@ -224,6 +247,8 @@ def find_similar_patterns(input_candles, symbol=None, interval=None, db_path=DB_
             "distance": round(dist, 3),
             "matched_candles": hist_candles,
             "prev_close": round(prev_close, 2),
+            "prev_high": round(prev_high, 2) if prev_high else None,
+            "prev_low": round(prev_low, 2) if prev_low else None,
             "day_close": round(day_close, 2),
             "day_pct_change": round(day_pct_change, 2),
         })

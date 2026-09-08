@@ -7,9 +7,19 @@ interface Candle {
 
 interface CandleStickChartProps {
   candles: Candle[];
+  showCPR?: boolean;
+  prevDayHigh?: number;
+  prevDayLow?: number;
+  prevDayClose?: number;
 }
 
-export default function CandleStickChart({ candles }: CandleStickChartProps) {
+export default function CandleStickChart({ 
+  candles, 
+  showCPR = true,
+  prevDayHigh,
+  prevDayLow,
+  prevDayClose
+}: CandleStickChartProps) {
   if (candles.length === 0) return null;
 
   // Dynamic sizing - show all candles up to max 75
@@ -33,8 +43,28 @@ export default function CandleStickChart({ candles }: CandleStickChartProps) {
   const bodyWidth = Math.max(columnWidth * 0.65, 1.5); // 65% of column, min 1.5px
   const wickWidth = Math.max(columnWidth * 0.15, 0.8); // 15% of column, min 0.8px
 
-  // Find min/max for scaling
+  // Calculate CPR levels from previous day data (if provided)
+  // Otherwise fall back to first candle of current data
+  const refHigh = prevDayHigh ?? candles[0].high;
+  const refLow = prevDayLow ?? candles[0].low;
+  const refClose = prevDayClose ?? candles[0].close;
+  
+  // Standard CPR calculations
+  const pivot = (refHigh + refLow + refClose) / 3;
+  const bc = (refHigh + refLow) / 2;  // Bottom Central
+  const tc = (pivot - bc) + pivot;     // Top Central = 2*Pivot - BC
+  
+  // Calculate support and resistance levels
+  const r1 = 2 * pivot - refLow;
+  const r2 = pivot + (refHigh - refLow);
+  const s1 = 2 * pivot - refHigh;
+  const s2 = pivot - (refHigh - refLow);
+
+  // Include CPR levels in price range calculation to ensure they're visible
   const allPrices = candles.flatMap(c => [c.high, c.low]);
+  if (showCPR) {
+    allPrices.push(r2, r1, tc, pivot, bc, s1, s2);
+  }
   const minPrice = Math.min(...allPrices);
   const maxPrice = Math.max(...allPrices);
   const priceRange = maxPrice - minPrice;
@@ -107,6 +137,164 @@ export default function CandleStickChart({ candles }: CandleStickChartProps) {
             </g>
           );
         })}
+
+        {/* CPR and Support/Resistance Lines */}
+        {showCPR && (
+          <>
+            {/* Resistance 2 (R2) - Red */}
+            <line
+              x1={paddingLeft}
+              y1={scalePrice(r2)}
+              x2={width - paddingRight}
+              y2={scalePrice(r2)}
+              stroke="#ef4444"
+              strokeWidth="1"
+              strokeDasharray="3,3"
+              opacity="0.7"
+            />
+            <text
+              x={width - paddingRight - 35}
+              y={scalePrice(r2) - 2}
+              fontSize="8"
+              fill="#ef4444"
+              fontWeight="600"
+              className="select-none"
+            >
+              R2
+            </text>
+
+            {/* Resistance 1 (R1) - Red */}
+            <line
+              x1={paddingLeft}
+              y1={scalePrice(r1)}
+              x2={width - paddingRight}
+              y2={scalePrice(r1)}
+              stroke="#ef4444"
+              strokeWidth="1"
+              strokeDasharray="5,2"
+              opacity="0.7"
+            />
+            <text
+              x={width - paddingRight - 35}
+              y={scalePrice(r1) - 2}
+              fontSize="8"
+              fill="#ef4444"
+              fontWeight="600"
+              className="select-none"
+            >
+              R1
+            </text>
+
+            {/* Top Central (TC) - Black */}
+            <line
+              x1={paddingLeft}
+              y1={scalePrice(tc)}
+              x2={width - paddingRight}
+              y2={scalePrice(tc)}
+              stroke="#1f2937"
+              strokeWidth="1.5"
+              strokeDasharray="6,3"
+              opacity="0.8"
+            />
+            <text
+              x={paddingLeft + 5}
+              y={scalePrice(tc) - 2}
+              fontSize="9"
+              fill="#1f2937"
+              fontWeight="700"
+              className="select-none"
+            >
+              TC
+            </text>
+
+            {/* Pivot - Black */}
+            <line
+              x1={paddingLeft}
+              y1={scalePrice(pivot)}
+              x2={width - paddingRight}
+              y2={scalePrice(pivot)}
+              stroke="#1f2937"
+              strokeWidth="2"
+              opacity="0.9"
+            />
+            <text
+              x={paddingLeft + 5}
+              y={scalePrice(pivot) - 2}
+              fontSize="9"
+              fill="#1f2937"
+              fontWeight="700"
+              className="select-none"
+            >
+              P
+            </text>
+
+            {/* Bottom Central (BC) - Black */}
+            <line
+              x1={paddingLeft}
+              y1={scalePrice(bc)}
+              x2={width - paddingRight}
+              y2={scalePrice(bc)}
+              stroke="#1f2937"
+              strokeWidth="1.5"
+              strokeDasharray="6,3"
+              opacity="0.8"
+            />
+            <text
+              x={paddingLeft + 5}
+              y={scalePrice(bc) + 11}
+              fontSize="9"
+              fill="#1f2937"
+              fontWeight="700"
+              className="select-none"
+            >
+              BC
+            </text>
+
+            {/* Support 1 (S1) - Green */}
+            <line
+              x1={paddingLeft}
+              y1={scalePrice(s1)}
+              x2={width - paddingRight}
+              y2={scalePrice(s1)}
+              stroke="#10b981"
+              strokeWidth="1"
+              strokeDasharray="5,2"
+              opacity="0.7"
+            />
+            <text
+              x={width - paddingRight - 35}
+              y={scalePrice(s1) + 11}
+              fontSize="8"
+              fill="#10b981"
+              fontWeight="600"
+              className="select-none"
+            >
+              S1
+            </text>
+
+            {/* Support 2 (S2) - Green */}
+            <line
+              x1={paddingLeft}
+              y1={scalePrice(s2)}
+              x2={width - paddingRight}
+              y2={scalePrice(s2)}
+              stroke="#10b981"
+              strokeWidth="1"
+              strokeDasharray="3,3"
+              opacity="0.7"
+            />
+            <text
+              x={width - paddingRight - 35}
+              y={scalePrice(s2) + 11}
+              fontSize="8"
+              fill="#10b981"
+              fontWeight="600"
+              className="select-none"
+            >
+              S2
+            </text>
+          </>
+        )}
 
         {/* Candles - show all candles up to MAX_DISPLAY_CANDLES */}
         {candles.slice(0, displayCandles).map((candle, i) => {

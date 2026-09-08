@@ -16,6 +16,8 @@ interface Match {
   start_time: string;
   distance: number;
   prev_close: number;
+  prev_high?: number;
+  prev_low?: number;
   day_close: number;
   day_pct_change: number;
 }
@@ -27,6 +29,7 @@ export default function PatternFinder() {
   const [numCandles, setNumCandles] = useState(5);
   const [interval, setInterval] = useState("15m");
   const [candles, setCandles] = useState<Candle[]>([]);
+  const [prevDayData, setPrevDayData] = useState<{high: number, low: number, close: number} | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(false);
@@ -71,6 +74,7 @@ export default function PatternFinder() {
 
       if (data.candles && data.candles.length > 0) {
         setCandles(data.candles);
+        setPrevDayData(data.prev_day || null);
         setError("");
       } else {
         setError("No candles returned");
@@ -274,7 +278,12 @@ export default function PatternFinder() {
               ) : (
                 <>
                   <div className="flex-1 min-h-0 min-h-[200px] md:min-h-0">
-                    <CandleStickChart candles={candles} />
+                    <CandleStickChart 
+                      candles={candles}
+                      prevDayHigh={prevDayData?.high}
+                      prevDayLow={prevDayData?.low}
+                      prevDayClose={prevDayData?.close}
+                    />
                   </div>
 
                   <button
@@ -352,7 +361,12 @@ export default function PatternFinder() {
                             </div>
                             {/* Increased height from h-48 to h-96 for better candle visibility */}
                             <div className="h-96">
-                              <CandleStickChart candles={expandedDayCandles} />
+                              <CandleStickChart 
+                                candles={expandedDayCandles}
+                                prevDayHigh={m.prev_high}
+                                prevDayLow={m.prev_low}
+                                prevDayClose={m.prev_close}
+                              />
                             </div>
                             {/* Compact 3-column stats */}
                             <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-[10px] text-gray-600 bg-gray-50 p-2 rounded">
