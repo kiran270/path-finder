@@ -21,7 +21,7 @@ def fetch_candles(ticker: str, start_date: str, num_candles: int, interval: str 
         ticker: e.g. "AAPL", "^NSEI", "BTC-USD"
         start_date: ISO format "2024-01-15" or "2024-01-15 09:30"
         num_candles: number of candles to fetch (going forward from start_date)
-        interval: "15m", "5m", "1h", "1d" etc.
+        interval: "15m", "5m", "1h"
     
     Returns:
         List of candles [{"open": ..., "high": ..., "low": ..., "close": ...}, ...]
@@ -33,10 +33,9 @@ def fetch_candles(ticker: str, start_date: str, num_candles: int, interval: str 
         except:
             start_dt = datetime.strptime(start_date, "%Y-%m-%d")
         
-        # Make timezone-aware (UTC) if naive
-        if start_dt.tzinfo is None:
-            from datetime import timezone
-            start_dt = start_dt.replace(tzinfo=timezone.utc)
+        # Keep timezone-naive for comparison with pandas index
+        if start_dt.tzinfo is not None:
+            start_dt = start_dt.replace(tzinfo=None)
         
         # Calculate end date (fetch extra to ensure we get enough)
         # 15m candles: 26 per trading day (6.5 hours), so fetch ~3x buffer
@@ -59,6 +58,10 @@ def fetch_candles(ticker: str, start_date: str, num_candles: int, interval: str 
         # Handle multi-index columns (happens with some tickers)
         if isinstance(data.columns, pd.MultiIndex):
             data.columns = data.columns.droplevel(1)
+        
+        # Ensure index is timezone-naive for comparison
+        if hasattr(data.index, 'tz') and data.index.tz is not None:
+            data.index = data.index.tz_localize(None)
         
         # Filter to candles at or after start_date
         data = data[data.index >= start_dt]

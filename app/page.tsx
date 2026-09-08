@@ -246,7 +246,6 @@ export default function PatternFinder() {
                   <option value="5m">5min</option>
                   <option value="15m">15min</option>
                   <option value="1h">1hour</option>
-                  <option value="1d">1day</option>
                 </select>
               </div>
 

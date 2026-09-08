@@ -37,7 +37,7 @@ def aggregate_candles(candles_5m, interval):
     
     Args:
         candles_5m: List of 5-min candles
-        interval: Target interval ("5m", "15m", "1h", "1d")
+        interval: Target interval ("5m", "15m", "1h")
     
     Returns:
         Aggregated candles
@@ -49,7 +49,6 @@ def aggregate_candles(candles_5m, interval):
     interval_map = {
         "15m": 3,   # 3 x 5min = 15min
         "1h": 12,   # 12 x 5min = 1hour
-        "1d": 75,   # 75 x 5min = 6.25 hours (rough trading day)
     }
     
     if interval not in interval_map:
