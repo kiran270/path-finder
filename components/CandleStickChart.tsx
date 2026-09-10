@@ -22,10 +22,9 @@ export default function CandleStickChart({
 }: CandleStickChartProps) {
   if (candles.length === 0) return null;
 
-  // Dynamic sizing - show all candles up to max 75
+  // Dynamic sizing - show all candles
   const numCandles = candles.length;
-  const MAX_DISPLAY_CANDLES = 75;
-  const displayCandles = Math.min(numCandles, MAX_DISPLAY_CANDLES);
+  const displayCandles = numCandles;
   
   const width = 900;
   const height = 400;
@@ -296,8 +295,8 @@ export default function CandleStickChart({
           </>
         )}
 
-        {/* Candles - show all candles up to MAX_DISPLAY_CANDLES */}
-        {candles.slice(0, displayCandles).map((candle, i) => {
+        {/* Candles - show all candles */}
+        {candles.map((candle, i) => {
           // Place each candle in its column
           const x = paddingLeft + i * columnWidth + columnWidth / 2;
           const isBullish = candle.close >= candle.open;

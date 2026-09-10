@@ -5,7 +5,7 @@ import path from "path";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { candles, topK = 10, ticker, interval } = body;
+    const { candles, topK = 10, ticker, interval, prevDay } = body;
 
     if (!Array.isArray(candles) || candles.length === 0) {
       return NextResponse.json({ error: "Invalid candles array" }, { status: 400 });
@@ -30,18 +30,27 @@ export async function POST(req: NextRequest) {
     const tickerToSymbol: Record<string, string> = {
       "^NSEBANK": "BANKNIFTY",
       "MARUTI.NS": "MARUTI.NS",
+      "SI=F": "SILVER",  // US Silver futures (Yahoo) matches MCX Silver (database)
     };
     
     const symbol = ticker ? tickerToSymbol[ticker] || ticker : null;
 
-    // Call Python script with symbol and interval parameters
+    // Prepare CPR data if available
+    const cprData = prevDay ? {
+      prev_high: prevDay.high,
+      prev_low: prevDay.low,
+      prev_close: prevDay.close
+    } : null;
+
+    // Call Python script with symbol, interval, and CPR parameters
     const scriptPath = path.join(process.cwd(), "api", "find_patterns.py");
     const args = [
       scriptPath, 
       JSON.stringify(candles),
       symbol || "",
       interval || "",
-      topK.toString()
+      topK.toString(),
+      cprData ? JSON.stringify(cprData) : ""
     ];
     
     const python = spawn("python", args);

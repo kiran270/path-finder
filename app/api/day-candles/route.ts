@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
     const tickerToSymbol: Record<string, string> = {
       "^NSEBANK": "BANKNIFTY",
       "MARUTI.NS": "MARUTI.NS",
+      "SI=F": "SILVER",  // US Silver futures (Yahoo) matches MCX Silver (database)
     };
     
     const symbol = ticker ? tickerToSymbol[ticker] || ticker : null;

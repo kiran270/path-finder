@@ -20,6 +20,19 @@ interface Match {
   prev_low?: number;
   day_close: number;
   day_pct_change: number;
+  pattern_direction?: "bullish" | "bearish" | "neutral";
+  outcomes?: {
+    next_6_candles_points: number | null;
+    next_6_max_gain: number | null;
+    next_6_max_loss: number | null;
+    next_12_candles_points: number | null;
+    next_12_max_gain: number | null;
+    next_12_max_loss: number | null;
+    day_end_points: number | null;
+    day_max_gain: number | null;
+    day_max_loss: number | null;
+  };
+  cpr_zone?: string;
 }
 
 export default function PatternFinder() {
@@ -102,7 +115,13 @@ export default function PatternFinder() {
       const res = await fetch("/api/match", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ candles, topK: 10, ticker, interval }),
+        body: JSON.stringify({ 
+          candles, 
+          topK: 10, 
+          ticker, 
+          interval,
+          prevDay: prevDayData  // Include CPR data for matching
+        }),
       });
 
       const data = await res.json();
@@ -209,13 +228,15 @@ export default function PatternFinder() {
               
               <div>
                 <label className="text-xs text-gray-700 font-semibold block mb-1">Ticker</label>
-                <input
-                  type="text"
+                <select
                   value={ticker}
-                  onChange={(e) => setTicker(e.target.value.toUpperCase())}
-                  placeholder="^NSEBANK"
+                  onChange={(e) => setTicker(e.target.value)}
                   className="bg-white border border-emerald-200 rounded-lg px-3 py-2 w-full text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition shadow-sm"
-                />
+                >
+                  <option value="^NSEBANK">BANKNIFTY</option>
+                  <option value="MARUTI.NS">MARUTI</option>
+                  <option value="SI=F">SILVER (MCX)</option>
+                </select>
               </div>
 
               <div>
@@ -277,6 +298,161 @@ export default function PatternFinder() {
                 </div>
               ) : (
                 <>
+                  {/* Pattern Direction Summary */}
+                  {matches.length > 0 && (
+                    <div className="flex-none mb-2 flex gap-2">
+                      <div className="flex-1 bg-gradient-to-br from-emerald-100 to-emerald-50 border-2 border-emerald-300 rounded-lg p-2 text-center">
+                        <div className="text-[10px] text-emerald-700 font-semibold mb-0.5">🟢 Bullish</div>
+                        <div className="text-lg font-black text-emerald-700">
+                          {matches.filter(m => m.pattern_direction === "bullish").length}
+                        </div>
+                        <div className="text-[9px] text-emerald-600">
+                          {((matches.filter(m => m.pattern_direction === "bullish").length / matches.length) * 100).toFixed(0)}%
+                        </div>
+                      </div>
+                      <div className="flex-1 bg-gradient-to-br from-red-100 to-red-50 border-2 border-red-300 rounded-lg p-2 text-center">
+                        <div className="text-[10px] text-red-700 font-semibold mb-0.5">🔴 Bearish</div>
+                        <div className="text-lg font-black text-red-700">
+                          {matches.filter(m => m.pattern_direction === "bearish").length}
+                        </div>
+                        <div className="text-[9px] text-red-600">
+                          {((matches.filter(m => m.pattern_direction === "bearish").length / matches.length) * 100).toFixed(0)}%
+                        </div>
+                      </div>
+                      <div className="flex-1 bg-gradient-to-br from-gray-100 to-gray-50 border-2 border-gray-300 rounded-lg p-2 text-center">
+                        <div className="text-[10px] text-gray-700 font-semibold mb-0.5">⚪ Neutral</div>
+                        <div className="text-lg font-black text-gray-700">
+                          {matches.filter(m => m.pattern_direction === "neutral").length}
+                        </div>
+                        <div className="text-[9px] text-gray-600">
+                          {((matches.filter(m => m.pattern_direction === "neutral").length / matches.length) * 100).toFixed(0)}%
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Outcome Statistics */}
+                  {matches.length > 0 && (
+                    <div className="flex-none mb-3 bg-gradient-to-r from-emerald-50 to-cyan-50 border-2 border-emerald-200 rounded-xl p-3">
+                      <div className="text-xs font-bold text-emerald-800 mb-2">📊 Average Outcomes from {matches.length} Matches</div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {/* Next 6 Candles */}
+                        <div className="bg-white rounded-lg p-2 border border-emerald-200">
+                          <div className="text-[10px] text-gray-600 mb-1 font-semibold">Next 6 Candles</div>
+                          <div className="space-y-0.5">
+                            <div className={`text-xs font-bold ${
+                              (() => {
+                                const validMatches = matches.filter(m => m.outcomes?.next_6_candles_points != null);
+                                if (validMatches.length === 0) return 'text-gray-400';
+                                const avg = validMatches.reduce((sum, m) => sum + (m.outcomes?.next_6_candles_points || 0), 0) / validMatches.length;
+                                return avg > 0 ? 'text-emerald-600' : avg < 0 ? 'text-red-600' : 'text-gray-600';
+                              })()
+                            }`}>
+                              Close: {(() => {
+                                const validMatches = matches.filter(m => m.outcomes?.next_6_candles_points != null);
+                                if (validMatches.length === 0) return 'N/A';
+                                const avg = validMatches.reduce((sum, m) => sum + (m.outcomes?.next_6_candles_points || 0), 0) / validMatches.length;
+                                return `${avg > 0 ? '+' : ''}${avg.toFixed(0)}`;
+                              })()}
+                            </div>
+                            <div className="text-[9px] text-emerald-600 font-semibold">
+                              ↑ {(() => {
+                                const validMatches = matches.filter(m => m.outcomes?.next_6_max_gain != null);
+                                if (validMatches.length === 0) return 'N/A';
+                                const avg = validMatches.reduce((sum, m) => sum + (m.outcomes?.next_6_max_gain || 0), 0) / validMatches.length;
+                                return `+${avg.toFixed(0)}`;
+                              })()}
+                            </div>
+                            <div className="text-[9px] text-red-600 font-semibold">
+                              ↓ {(() => {
+                                const validMatches = matches.filter(m => m.outcomes?.next_6_max_loss != null);
+                                if (validMatches.length === 0) return 'N/A';
+                                const avg = validMatches.reduce((sum, m) => sum + (m.outcomes?.next_6_max_loss || 0), 0) / validMatches.length;
+                                return `${avg.toFixed(0)}`;
+                              })()}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Next 12 Candles */}
+                        <div className="bg-white rounded-lg p-2 border border-emerald-200">
+                          <div className="text-[10px] text-gray-600 mb-1 font-semibold">Next 12 Candles</div>
+                          <div className="space-y-0.5">
+                            <div className={`text-xs font-bold ${
+                              (() => {
+                                const validMatches = matches.filter(m => m.outcomes?.next_12_candles_points != null);
+                                if (validMatches.length === 0) return 'text-gray-400';
+                                const avg = validMatches.reduce((sum, m) => sum + (m.outcomes?.next_12_candles_points || 0), 0) / validMatches.length;
+                                return avg > 0 ? 'text-emerald-600' : avg < 0 ? 'text-red-600' : 'text-gray-600';
+                              })()
+                            }`}>
+                              Close: {(() => {
+                                const validMatches = matches.filter(m => m.outcomes?.next_12_candles_points != null);
+                                if (validMatches.length === 0) return 'N/A';
+                                const avg = validMatches.reduce((sum, m) => sum + (m.outcomes?.next_12_candles_points || 0), 0) / validMatches.length;
+                                return `${avg > 0 ? '+' : ''}${avg.toFixed(0)}`;
+                              })()}
+                            </div>
+                            <div className="text-[9px] text-emerald-600 font-semibold">
+                              ↑ {(() => {
+                                const validMatches = matches.filter(m => m.outcomes?.next_12_max_gain != null);
+                                if (validMatches.length === 0) return 'N/A';
+                                const avg = validMatches.reduce((sum, m) => sum + (m.outcomes?.next_12_max_gain || 0), 0) / validMatches.length;
+                                return `+${avg.toFixed(0)}`;
+                              })()}
+                            </div>
+                            <div className="text-[9px] text-red-600 font-semibold">
+                              ↓ {(() => {
+                                const validMatches = matches.filter(m => m.outcomes?.next_12_max_loss != null);
+                                if (validMatches.length === 0) return 'N/A';
+                                const avg = validMatches.reduce((sum, m) => sum + (m.outcomes?.next_12_max_loss || 0), 0) / validMatches.length;
+                                return `${avg.toFixed(0)}`;
+                              })()}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Day End */}
+                        <div className="bg-white rounded-lg p-2 border border-emerald-200">
+                          <div className="text-[10px] text-gray-600 mb-1 font-semibold">Day End</div>
+                          <div className="space-y-0.5">
+                            <div className={`text-xs font-bold ${
+                              (() => {
+                                const validMatches = matches.filter(m => m.outcomes?.day_end_points != null);
+                                if (validMatches.length === 0) return 'text-gray-400';
+                                const avg = validMatches.reduce((sum, m) => sum + (m.outcomes?.day_end_points || 0), 0) / validMatches.length;
+                                return avg > 0 ? 'text-emerald-600' : avg < 0 ? 'text-red-600' : 'text-gray-600';
+                              })()
+                            }`}>
+                              Close: {(() => {
+                                const validMatches = matches.filter(m => m.outcomes?.day_end_points != null);
+                                if (validMatches.length === 0) return 'N/A';
+                                const avg = validMatches.reduce((sum, m) => sum + (m.outcomes?.day_end_points || 0), 0) / validMatches.length;
+                                return `${avg > 0 ? '+' : ''}${avg.toFixed(0)}`;
+                              })()}
+                            </div>
+                            <div className="text-[9px] text-emerald-600 font-semibold">
+                              ↑ {(() => {
+                                const validMatches = matches.filter(m => m.outcomes?.day_max_gain != null);
+                                if (validMatches.length === 0) return 'N/A';
+                                const avg = validMatches.reduce((sum, m) => sum + (m.outcomes?.day_max_gain || 0), 0) / validMatches.length;
+                                return `+${avg.toFixed(0)}`;
+                              })()}
+                            </div>
+                            <div className="text-[9px] text-red-600 font-semibold">
+                              ↓ {(() => {
+                                const validMatches = matches.filter(m => m.outcomes?.day_max_loss != null);
+                                if (validMatches.length === 0) return 'N/A';
+                                const avg = validMatches.reduce((sum, m) => sum + (m.outcomes?.day_max_loss || 0), 0) / validMatches.length;
+                                return `${avg.toFixed(0)}`;
+                              })()}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="flex-1 min-h-0 min-h-[200px] md:min-h-0">
                     <CandleStickChart 
                       candles={candles}
@@ -329,6 +505,9 @@ export default function PatternFinder() {
                                 {i + 1}
                               </div>
                               <div className="text-[12px] font-bold text-gray-700 truncate">{m.day}</div>
+                              <div className="text-xs">
+                                {m.pattern_direction === "bullish" ? "🟢" : m.pattern_direction === "bearish" ? "🔴" : "⚪"}
+                              </div>
                             </div>
 
                             <div className={`flex-none px-2.5 py-1 rounded-lg font-black text-[12px] shadow-sm ${
